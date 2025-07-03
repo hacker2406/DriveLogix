@@ -1,9 +1,32 @@
 import DrivingLog from "../models/DrivingLog.js";
+import fetch from "node-fetch"; 
+
+async function getAddressFromCoords(lat, lng) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "DriveLogix/1.0 (your@email.com)" }
+    });
+    const data = await res.json();
+    return data.display_name || "";
+  } catch {
+    return "";
+  }
+}
 
 // Create a new driving log
 export const createLog = async (req, res) => {
   try {
-    const { date, route, distance, startAddress, endAddress, notes } = req.body;
+    const { date, route, distance, notes } = req.body;
+
+    // Get start/end addresses using reverse geocoding
+    let startAddress = "";
+    let endAddress = "";
+    if (Array.isArray(route) && route.length === 2) {
+      startAddress = await getAddressFromCoords(route[0].lat, route[0].lng);
+      endAddress = await getAddressFromCoords(route[1].lat, route[1].lng);
+    }
+
     const log = new DrivingLog({
       user: req.user._id,
       date,

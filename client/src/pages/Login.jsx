@@ -19,8 +19,7 @@ const Login = () => {
         `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/login`,
         form
       );
-      const { token, ...userData } = data;
-      login(userData, token);
+      login(data); // <-- This will store the token and user info correctly
       navigate('/dashboard');
     } catch (err) {
       setError('Invalid email or password');

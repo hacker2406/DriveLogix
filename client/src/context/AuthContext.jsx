@@ -44,7 +44,12 @@ export const AuthProvider = ({ children }) => {
     navigate('/');
   };
 
-  const getToken = () => user?.token || JSON.parse(localStorage.getItem("user"))?.token;
+  const getToken = () => {
+    const token =
+      user?.token ||
+      (localStorage.getItem("user") && JSON.parse(localStorage.getItem("user")).token);
+    return token || "";
+  };
 
   return (
     <AuthContext.Provider value={{ user, login, logout, getToken }}>
