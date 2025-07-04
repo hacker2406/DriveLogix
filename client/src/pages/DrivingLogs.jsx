@@ -2,16 +2,39 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import RouteMapPicker from "../components/RouteMapPicker";
-import { FaMapMarkerAlt, FaTrash, FaRoad } from "react-icons/fa";
+import { FaMapMarkerAlt, FaTrash, FaRoad, FaGasPump, FaCar } from "react-icons/fa";
 
 const DrivingLogs = () => {
   const { getToken } = useAuth();
   const [logs, setLogs] = useState([]);
-  const [form, setForm] = useState({ date: "", notes: "" });
+  const [vehicles, setVehicles] = useState([]);
+  const [form, setForm] = useState({
+    date: "",
+    notes: "",
+    vehicle: "",
+    fuelUsed: "",
+    fuelType: "",
+    fuelCost: "",
+  });
   const [routeCoords, setRouteCoords] = useState([]);
   const [distance, setDistance] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Fetch vehicles for dropdown
+  const fetchVehicles = async () => {
+    try {
+      const token = getToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/vehicles`,
+        { headers }
+      );
+      setVehicles(data);
+    } catch {
+      setVehicles([]);
+    }
+  };
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -30,6 +53,7 @@ const DrivingLogs = () => {
   };
 
   useEffect(() => {
+    fetchVehicles();
     fetchLogs();
     // eslint-disable-next-line
   }, []);
@@ -44,6 +68,10 @@ const DrivingLogs = () => {
   const handleSubmit = async e => {
     e.preventDefault();
     setError("");
+    if (!form.vehicle) {
+      setError("Please select a vehicle.");
+      return;
+    }
     if (routeCoords.length !== 2 || !distance) {
       setError("Please select start and end points on the map.");
       return;
@@ -55,13 +83,24 @@ const DrivingLogs = () => {
         `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/driving-logs`,
         {
           date: form.date,
+          vehicle: form.vehicle,
           route: routeCoords.map(([lat, lng]) => ({ lat, lng })),
           distance: Number(distance),
-          notes: form.notes
+          notes: form.notes,
+          fuelUsed: form.fuelUsed ? Number(form.fuelUsed) : undefined,
+          fuelType: form.fuelType,
+          fuelCost: form.fuelCost ? Number(form.fuelCost) : undefined,
         },
         { headers }
       );
-      setForm({ date: "", notes: "" });
+      setForm({
+        date: "",
+        notes: "",
+        vehicle: "",
+        fuelUsed: "",
+        fuelType: "",
+        fuelCost: "",
+      });
       setRouteCoords([]);
       setDistance("");
       fetchLogs();
@@ -83,6 +122,8 @@ const DrivingLogs = () => {
       setError("Failed to delete log");
     }
   };
+
+  console.log("Token being sent:", getToken());
 
   return (
     <div className="max-w-6xl mx-auto py-10 px-2 md:px-0">
@@ -108,8 +149,62 @@ const DrivingLogs = () => {
             />
           </div>
           <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle</label>
+            <select
+              name="vehicle"
+              value={form.vehicle}
+              onChange={handleChange}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300"
+              required
+            >
+              <option value="">Select vehicle</option>
+              {vehicles.map(v => (
+                <option key={v._id} value={v._id}>
+                  {v.name} ({v.number})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Route (Map Picker)</label>
             <RouteMapPicker value={routeCoords} onChange={handleRouteChange} />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fuel Used (liters)</label>
+            <input
+              type="number"
+              name="fuelUsed"
+              value={form.fuelUsed}
+              onChange={handleChange}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300"
+              min="0"
+              step="any"
+              placeholder="e.g. 5.2"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fuel Type</label>
+            <input
+              type="text"
+              name="fuelType"
+              value={form.fuelType}
+              onChange={handleChange}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300"
+              placeholder="e.g. Petrol, Diesel"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fuel Cost (₹)</label>
+            <input
+              type="number"
+              name="fuelCost"
+              value={form.fuelCost}
+              onChange={handleChange}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300"
+              min="0"
+              step="any"
+              placeholder="e.g. 500"
+            />
           </div>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -164,6 +259,20 @@ const DrivingLogs = () => {
                     <div className="text-gray-700 mt-1">
                       Distance: <span className="font-semibold">{log.distance} km</span>
                     </div>
+                    {log.vehicle && (
+                      <div className="text-gray-700 mt-1 flex items-center gap-2">
+                        <FaCar className="text-green-500" />
+                        Vehicle: <span className="font-semibold">{log.vehicle.name} ({log.vehicle.number})</span>
+                      </div>
+                    )}
+                    {log.fuelUsed && (
+                      <div className="text-gray-700 mt-1 flex items-center gap-2">
+                        <FaGasPump className="text-green-500" />
+                        Fuel: <span className="font-semibold">{log.fuelUsed} L</span>
+                        {log.fuelType && <span>({log.fuelType})</span>}
+                        {log.fuelCost && <span>Cost: ₹{log.fuelCost}</span>}
+                      </div>
+                    )}
                     {log.notes && (
                       <div className="text-gray-500 text-sm mt-1">Notes: {log.notes}</div>
                     )}

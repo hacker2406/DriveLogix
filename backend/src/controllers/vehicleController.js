@@ -1,8 +1,16 @@
 import Vehicle from "../models/Vehicle.js";
+import { cloudinary } from "../config/cloudinary.js";
 
 export const addVehicle = async (req, res) => {
   try {
     const { name, number, type, make, model, year, notes } = req.body;
+    let photo = "";
+
+    // Multer + CloudinaryStorage puts the URL in req.file.path
+    if (req.file && req.file.path) {
+      photo = req.file.path; // This is the Cloudinary URL
+    }
+
     const vehicle = new Vehicle({
       user: req.user._id,
       name,
@@ -11,12 +19,14 @@ export const addVehicle = async (req, res) => {
       make,
       model,
       year,
-      notes
+      notes,
+      photo,
     });
+
     await vehicle.save();
     res.status(201).json(vehicle);
   } catch (err) {
-    res.status(500).json({ message: "Failed to add vehicle" });
+    res.status(500).json({ message: "Failed to add vehicle", error: err.message });
   }
 };
 

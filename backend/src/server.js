@@ -2,6 +2,7 @@ import express from "express";
 import authRoutes from "./routes/authRoutes.js"
 import drivingLogRoutes from "./routes/drivingLogRoutes.js";
 import vehicleRoutes from "./routes/vehicleRoutes.js";
+import documentRoutes from "./routes/documentRoutes.js";
 import connectDB from "./config/db.js"
 import cors from "cors"
 import dotenv from "dotenv";
@@ -19,6 +20,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/driving-logs", drivingLogRoutes);
 
 app.use("/api/vehicles", vehicleRoutes);
+
+app.use("/api", documentRoutes);
 
 app.get("/", (req, res) => {
   res.send("Shoe E-Commerce Backend is Running!");

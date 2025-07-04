@@ -9,7 +9,16 @@ const vehicleSchema = new mongoose.Schema(
     make: { type: String }, // e.g. "Honda"
     model: { type: String }, // e.g. "City"
     year: { type: Number },  // e.g. 2020
-    notes: { type: String }
+    notes: { type: String },
+    photo: { type: String }, // <-- Add this line for Cloudinary URL
+    documents: [
+      {
+        url: String,
+        public_id: String,
+        type: String, // e.g., "insurance", "registration", "puc"
+        uploadedAt: { type: Date, default: Date.now }
+      }
+    ]
   },
   { timestamps: true }
 );
